@@ -30,7 +30,7 @@ class Config:
     load_size: int = 286       # Ukuran resize sebelum random crop (augmentasi jitter).
     in_channels: int = 3       # Label map RGB.
     out_channels: int = 3      # Foto RGB.
-    num_workers: int = 2       # Colab biasanya memberi 2 vCPU.
+    num_workers: int = 4       # Proses paralel untuk memuat data. Di Windows, set 0 kalau DataLoader error.
 
     # ------------------------------------------------------------------
     # Model
@@ -53,7 +53,7 @@ class Config:
     # ------------------------------------------------------------------
     # Output, checkpoint, dan logging
     # ------------------------------------------------------------------
-    output_dir: str = "outputs"   # Di Colab, arahkan ke folder Google Drive.
+    output_dir: str = "outputs"   # Folder hasil di PC lokal (tidak di-commit ke Git).
     run_name: str = "baseline"    # Nama eksperimen; tiap eksperimen beda folder.
     save_every: int = 10          # Simpan checkpoint tiap N epoch.
     sample_every: int = 5         # Simpan contoh gambar validasi tiap N epoch.
