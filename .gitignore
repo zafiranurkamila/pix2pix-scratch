@@ -1,0 +1,15 @@
+# dataset & hasil training (besar, jangan di-commit)
+data/
+outputs/
+*.pth
+*.pt
+
+# python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# env
+.venv/
+venv/
+.env
