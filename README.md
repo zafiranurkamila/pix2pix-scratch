@@ -6,10 +6,11 @@ Dataset: CMP Facades (label map → foto fasad).
 
 ## Pembagian tugas
 
-| Orang | Bagian |
-|---|---|
-| Zafira | Prompt & training (`src/losses.py`, `src/train.py`, `src/utils.py`, `src/config.py`) |
-| [Nama] | Model (`src/models/`) |
-| [Nama] | Dataset & dokumentasi (`src/dataset.py`, `docs/`) |
+| Orang | Peran | File |
+|---|---|---|
+| Zafira | Prompt Engineer & Training Engineer | `src/models/`, `src/losses.py`, `src/train.py`, `src/utils.py`, `src/config.py` |
+| Fira | Data Pipeline & Preprocessing Engineer | `src/dataset.py`, visualisasi input → output → target |
+| Ce | Lead Documentarian & Error Handler | `docs/` (log interaksi LLM, laporan), evaluasi akhir |
 
+Setiap anggota commit bagiannya sendiri dari akun GitHub masing-masing.
 Detail kesepakatan ada di `KONTRAK.md`.
