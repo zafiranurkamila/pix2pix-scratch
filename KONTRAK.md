@@ -189,9 +189,9 @@ pix2pix-scratch/
 | Item | Spesifikasi |
 |---|---|
 | GPU | NVIDIA GeForce RTX 5060 Ti (arsitektur Blackwell, compute capability `sm_120`) |
-| VRAM | ____ GB (cek dengan `nvidia-smi`, diisi Zafira) |
-| Sistem operasi | ____ (diisi Zafira) |
-| Python | ____ (diisi Zafira) |
+| VRAM | 16 GB |
+| Sistem operasi | Windows 11 |
+| Python | 3.14.6 |
 | PyTorch | **≥ 2.7, build CUDA 12.8 (`cu128`) atau lebih baru** |
 
 ### Aturan
