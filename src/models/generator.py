@@ -29,3 +29,38 @@ class DownBlock(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.block(x)
+
+
+class UpBlock(nn.Module):
+    """Satu blok decoder U-Net: ConvTranspose 4x4 stride 2 -> BatchNorm -> (Dropout) -> ReLU,
+    lalu hasilnya digabung (concat) dengan skip connection dari encoder.
+
+    Shape:
+        x    : [B, in_channels, H, W]
+        skip : [B, skip_channels, 2H, 2W]
+        out  : [B, out_channels + skip_channels, 2H, 2W]
+    """
+
+    def __init__(self, in_channels: int, out_channels: int, use_dropout: bool = False):
+        super().__init__()
+
+        layers = [
+            nn.ConvTranspose2d(
+                in_channels,
+                out_channels,
+                kernel_size=4,
+                stride=2,
+                padding=1,
+                bias=False,
+            ),
+            nn.BatchNorm2d(out_channels),
+        ]
+        if use_dropout:
+            layers.append(nn.Dropout(0.5))
+        layers.append(nn.ReLU())
+
+        self.block = nn.Sequential(*layers)
+
+    def forward(self, x: torch.Tensor, skip: torch.Tensor) -> torch.Tensor:
+        x = self.block(x)
+        return torch.cat([x, skip], dim=1)
