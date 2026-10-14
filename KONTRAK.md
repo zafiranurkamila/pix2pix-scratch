@@ -3,11 +3,11 @@
 > Dokumen ini berisi kesepakatan teknis tim supaya pekerjaan tiga orang bisa digabung tanpa bentrok.
 > **Aturan utama:** kalau ada yang mau mengubah isi kontrak ini, diskusikan dulu di grup, lalu update dokumen ini lewat Pull Request. Jangan ubah diam-diam di kode.
 
-- **Versi:** 1.1
+- **Versi:** 1.2
 - **Tanggal disepakati:** 13/10/2026
 - **Anggota:** Zafira (Model & Training), Fira (Dataset), Ce (Dokumentasi & Laporan)
 - **Framework:** PyTorch
-- **Lingkungan training:** Google Colab, GPU T4
+- **Lingkungan training:** PC lokal Zafira, GPU NVIDIA GeForce RTX 5060 Ti (detail di bagian 8)
 
 ---
 
@@ -170,29 +170,50 @@ pix2pix-scratch/
 │   ├── losses.py           ← Zafira
 │   ├── train.py            ← Zafira
 │   └── utils.py            ← Zafira
-├── notebooks/
-│   └── colab_train.ipynb   ← Zafira; hanya launcher: clone repo, siapkan data, jalankan train
+├── notebooks/              ← Zafira; opsional, hanya untuk eksplorasi & visualisasi hasil
 ├── data/                   ← tidak di-commit
 │   └── facades/{train,val,test}/
-├── outputs/                ← tidak di-commit (di Colab diarahkan ke Google Drive)
+├── outputs/                ← tidak di-commit (disimpan di disk PC, hasil penting di-backup ke Drive)
 │   └── <run_name>/{checkpoints,samples,logs}/
 └── docs/                   ← Ce
     ├── log_interaksi/      ← log LLM tiap anggota (dikompilasi Ce)
     └── laporan/
 ```
 
-**Prinsip:** semua logika ditulis di file `.py`. Notebook hanya untuk menjalankan. Alasannya, notebook susah dibaca perubahannya di Git, sementara kontribusi tiap anggota dinilai dari commit.
+**Prinsip:** semua logika ditulis di file `.py`. Training dijalankan dari terminal (`python -m src.train`), dan notebook hanya untuk melihat atau memvisualisasikan hasil. Alasannya, notebook susah dibaca perubahannya di Git, sementara kontribusi tiap anggota dinilai dari commit. Sebelum commit notebook, **clear semua output** supaya file tidak membengkak.
 
 ---
 
-## 8. Aturan di Google Colab
+## 8. Lingkungan Training (PC Lokal Zafira)
 
-1. **Clone repo dari GitHub** di awal setiap sesi Colab.
-2. **Dataset disalin ke `/content/data/facades`** (disk lokal Colab). Jangan dibaca langsung dari Google Drive per file karena lambat.
-3. **Checkpoint, sampel gambar, dan log disimpan ke Google Drive**, karena sesi Colab bisa terputus. Training harus bisa di-*resume* dari checkpoint terakhir.
-4. **Seed = 42** untuk semua eksperimen, supaya hasil tuning bisa dibandingkan dengan adil.
-5. Setiap eksperimen tuning memakai `run_name` yang berbeda (contoh: `baseline`, `lr1e-4`, `bs4`), sehingga hasilnya tersimpan di folder terpisah.
-6. Sebelum commit notebook, **clear semua output** (Edit → Clear all outputs) supaya file tidak membengkak.
+| Item | Spesifikasi |
+|---|---|
+| GPU | NVIDIA GeForce RTX 5060 Ti (arsitektur Blackwell, compute capability `sm_120`) |
+| VRAM | 16 GB |
+| Sistem operasi | Windows 11 |
+| Python | 3.14.6 |
+| PyTorch | **≥ 2.7, build CUDA 12.8 (`cu128`) atau lebih baru** |
+
+### Aturan
+1. **Semua run yang masuk laporan dijalankan di PC Zafira.** Dengan hardware yang sama, waktu training dan hasil antar eksperimen bisa dibandingkan dengan adil.
+2. ⚠️ **PyTorch wajib build CUDA 12.8 ke atas.** RTX seri 50 memakai arsitektur baru (`sm_120`) yang belum didukung build PyTorch lama. Gejalanya menipu: `torch.cuda.is_available()` tetap `True`, tapi operasi pertama di GPU gagal dengan error `no kernel image is available for execution on the device`. Install PyTorch memakai perintah dari [pytorch.org/get-started/locally](https://pytorch.org/get-started/locally/) dan pilih CUDA 12.8 atau lebih baru.
+3. **Cek GPU sebelum training pertama:**
+   ```python
+   import torch
+   print(torch.__version__, torch.version.cuda)          # versi CUDA harus >= 12.8
+   print(torch.cuda.get_device_name(0))
+   print(torch.cuda.get_device_capability(0))            # RTX 5060 Ti -> (12, 0)
+   x = torch.randn(1024, 1024, device="cuda")
+   print((x @ x).sum().item())                           # memastikan kernel GPU benar-benar jalan
+   ```
+4. **Pakai virtual environment khusus proyek** (venv atau conda). Versi paket yang dipakai dicatat di `requirements.txt`.
+5. **Dataset disimpan di `data/facades/`** di dalam folder repo.
+6. **Output disimpan di `outputs/<run_name>/`.** Training harus bisa di-*resume* dari checkpoint terakhir, untuk jaga-jaga kalau listrik padam, PC restart, atau training sengaja dihentikan lalu dilanjutkan.
+7. **Backup ke Google Drive kelompok:** checkpoint terbaik, grafik loss, dan sampel gambar tiap run. Ce butuh akses ke file ini untuk laporan.
+8. **Seed = 42** untuk semua eksperimen, supaya hasil tuning bisa dibandingkan dengan adil.
+9. Setiap eksperimen tuning memakai `run_name` yang berbeda (contoh: `baseline`, `lr1e-4`, `bs4`), sehingga hasilnya tersimpan di folder terpisah.
+10. **Kalau OS-nya Windows:** `DataLoader` dengan `num_workers > 0` butuh blok `if __name__ == "__main__":` di `train.py` (akan dipasang di sana). Kalau tetap error, set `num_workers=0`.
+11. **Fira dan Ce tidak butuh GPU.** Smoke test dataset bisa dijalankan di CPU laptop masing-masing.
 
 ---
 
@@ -224,7 +245,8 @@ pix2pix-scratch/
 - [ ] `fake = G(batch["input"])` → `[B,3,256,256]`.
 - [ ] `D(batch["input"], fake)` → `[B,1,30,30]`.
 - [ ] Hitung loss G dan D sekali, pastikan bukan NaN.
-- [ ] Jalankan 1 epoch penuh, pastikan checkpoint dan sampel tersimpan ke Drive.
+- [ ] Jalankan 1 epoch penuh, pastikan checkpoint dan sampel tersimpan di `outputs/<run_name>/`.
+- [ ] Hentikan training lalu jalankan lagi, pastikan training lanjut dari epoch terakhir (resume berfungsi).
 
 ---
 
@@ -233,7 +255,7 @@ pix2pix-scratch/
 - **Setiap anggota mencatat log sesi LLM-nya sendiri** memakai template dari panduan tugas, disimpan di `docs/log_interaksi/`.
 - Nama file: `YYYY-MM-DD_<peran>_<topik>.md`, contoh: `2026-10-13_training_kontrak-interface.md`.
 - Setiap log wajib menyertakan **tautan share chat** LLM.
-- Pesan error dari notebook disalin **utuh** ke log, beserta prompt perbaikan dan analisis solusinya.
+- Pesan error dari terminal atau notebook disalin **utuh** ke log, beserta prompt perbaikan dan analisis solusinya.
 - **Ce** mengompilasi semua log menjadi Log Interaksi akhir kelompok dan menyusun laporan akhir.
 - Supaya Ce bisa menulis laporan tanpa menebak, Zafira dan Fira mengirimkan ke Ce: grafik loss, contoh hasil gambar per epoch, dan tabel hasil eksperimen tuning.
 
@@ -245,3 +267,4 @@ pix2pix-scratch/
 |---|---|---|---|
 | 1.0 | 13/10/2026 | Kesepakatan awal | Semua anggota |
 | 1.1 | 13/10/2026 | Pembagian peran diperbarui: Zafira pegang model + loss + training, Fira pegang dataset, Ce pegang dokumentasi & laporan | Semua anggota |
+| 1.2 | 13/10/2026 | Lingkungan training pindah dari Google Colab (T4) ke PC lokal Zafira (RTX 5060 Ti); notebook jadi opsional | Semua anggota |
