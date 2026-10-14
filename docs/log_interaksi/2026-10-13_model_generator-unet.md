@@ -2,7 +2,7 @@
 
 - **Tanggal Sesi:** 13/10/2026
 - **Anggota:** Zafira (Model & Training)
-- **Target Modul:** Generator U-Net — `DownBlock` (encoder) & `UpBlock` (decoder)
+- **Target Modul:** Generator U-Net — `DownBlock`, `UpBlock`, `UNetGenerator`
 - **LLM:** Claude (claude.ai, proyek "Pix2Pix Gen AI")
 - **Tautan Sesi Chat:** https://claude.ai/share/a98da975-f146-4377-9c2b-ccfb73e7d4fc
 
@@ -96,8 +96,38 @@
 
 - **Analisis Kelompok:** Shape-nya cocok dengan perhitungan di Tahap 2: output tiap blok decoder selalu 2× channel karena ditempel skip, makanya input u2 = 1024. Tes train/eval membuktikan dropout bekerja sebagai sumber keacakan pengganti noise `z`: di mode train input yang sama menghasilkan output berbeda, sedangkan di mode eval output-nya selalu sama. Ini jadi catatan untuk nanti saat menyimpan sampel gambar di `train.py`, harus diputuskan pakai `G.eval()` atau `G.train()`, dan pilihannya ditulis di laporan.
 
+### 6. TAHAP PERAKITAN — `UNetGenerator`
+
+- **Tanggal:** 14/10/2026
+
+- **Prompt:**
+  > Tes UpBlock di PC lolos: out1 [2,1024,2,2], out2 [2,1024,4,4], mode train False, mode eval True. Lanjut rakit UNetGenerator.
+
+- **Alasan Khusus:** DownBlock dan UpBlock sudah terbukti benar masing-masing, jadi tinggal dirakit. Kalau nanti ada error, aku tahu salahnya di perakitan, bukan di bloknya.
+
+- **Output Model (ringkasan):** class `UNetGenerator(in_channels=3, out_channels=3, features=64)` di `src/models/generator.py`.
+  - Konstanta `ENCODER_MULTS = (1, 2, 4, 8, 8, 8, 8, 8)` dan `NUM_DROPOUT_BLOCKS = 3` ditaruh di atas class supaya aturan arsitekturnya langsung kelihatan.
+  - Pakai `nn.ModuleList`, bukan list biasa. Kalau list biasa, parameternya tidak ikut dilatih, tidak pindah ke GPU, dan tidak tersimpan di checkpoint, tanpa error apa pun.
+  - `use_norm = 0 < i < last`: BatchNorm mati di e1 dan bottleneck.
+  - `ch = skip_ch + skip_ch`: rumus channel 1024 dari Tahap 2, sekarang jadi kode.
+  - Layer final: ConvTranspose 128 → 3 channel + Tanh, jadi output di range [-1, 1].
+  - Pengaman di awal `forward`: kalau ukuran input bukan kelipatan 256, langsung `ValueError` dengan pesan yang menunjuk ke preprocessing dataset.
+
+- **Verifikasi mandiri (smoke test di PC, sesuai checklist KONTRAK bagian 10):**
+  ```
+  1. Output shape           -> torch.Size([2, 3, 256, 256])
+     Range [-1, 1]           -> True True
+  2. Jumlah parameter       -> 54,414,531
+  3. Batch size 1 (train)   -> torch.Size([1, 3, 256, 256])
+  4. Input 286x286          -> ValueError: Ukuran input 286x286 harus kelipatan 256 (kontrak: 256x256). Cek preprocessing di dataset.
+  ```
+  Saat `G.train()` dipanggil, susunan layer ikut tercetak. Di situ terlihat e1 dan bottleneck (DownBlock 0 dan 7) tanpa BatchNorm dan conv-nya masih pakai bias, dropout cuma ada di UpBlock 0–2, dan layer final diakhiri Tanh. Semua sesuai rancangan.
+
+- **Analisis Kelompok:** Jumlah parameter 54.414.531 sama persis dengan hitungan manual Claude (encoder 19.538.240 + decoder 34.876.291), jadi tidak ada channel yang salah ketik. Tes 3 membuktikan keputusan bottleneck tanpa BatchNorm berhasil: batch size 1 jalan di mode train. Tes 4 adalah error yang sengaja dibuat untuk menguji pengaman. Kalau nanti dataset lupa crop ke 256, error-nya langsung jelas, tidak muncul sebagai error `torch.cat` di tengah decoder yang bikin bingung. **Generator selesai.** Berikutnya Discriminator PatchGAN.
+
 ---
 
 **Commit terkait:**
 - `feat(model): tambah DownBlock encoder U-Net` (branch `feat/model`)
 - `feat(model): tambah UpBlock decoder U-Net` (branch `feat/model`)
+- `feat(model): rakit UNetGenerator dari DownBlock dan UpBlock` (branch `feat/model`)
