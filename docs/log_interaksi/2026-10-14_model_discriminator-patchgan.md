@@ -4,7 +4,7 @@
 - **Anggota:** Zafira (Model & Training)
 - **Target Modul:** Discriminator PatchGAN 70×70 + `init_weights` (`src/models/discriminator.py`)
 - **LLM:** Claude (claude.ai, proyek "Pix2Pix Gen AI")
-- **Tautan Sesi Chat:** [TEMPEL LINK SHARE CHAT DISCRIMINATOR DI SINI]
+- **Tautan Sesi Chat:** https://claude.ai/share/8f52eca0-7534-4e7b-bff0-fee2f6ed0f58
 
 ---
 
