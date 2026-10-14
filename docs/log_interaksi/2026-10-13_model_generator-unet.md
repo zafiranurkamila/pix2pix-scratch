@@ -2,7 +2,7 @@
 
 - **Tanggal Sesi:** 13/10/2026
 - **Anggota:** Zafira (Model & Training)
-- **Target Modul:** Generator U-Net — `DownBlock` (encoder)
+- **Target Modul:** Generator U-Net — `DownBlock` (encoder) & `UpBlock` (decoder)
 - **LLM:** Claude (claude.ai, proyek "Pix2Pix Gen AI")
 - **Tautan Sesi Chat:** https://claude.ai/share/a98da975-f146-4377-9c2b-ccfb73e7d4fc
 
@@ -71,6 +71,33 @@
 
 - **Analisis & Solusi Kelompok:** BatchNorm butuh lebih dari 1 nilai per channel. Di bottleneck ukurannya 1×1, jadi kalau batch 1 pasti error. Karena itu bottleneck dibuat tanpa BatchNorm.
 
+### 5. TAHAP PEMBUATAN KODE — `UpBlock`
+
+- **Tanggal:** 14/10/2026
+
+- **Prompt:**
+  > Udah aku tes DownBlock di PC, semua hasilnya sesuai. Lanjut ke UpBlock.
+
+- **Alasan Khusus:** Setelah encoder jadi, langkah berikutnya decoder. Aku minta blok decoder dibuat terpisah dulu supaya bisa dites sendiri sebelum dirakit jadi Generator utuh, jadi kalau nanti ada error shape gampang dilacak.
+
+- **Output Model (ringkasan):** class `UpBlock(in_channels, out_channels, use_dropout=False)` ditambahkan di `src/models/generator.py`.
+  - `ConvTranspose2d` kernel 4, stride 2, padding 1 → ukuran jadi 2× lipat: `(H − 1)·2 − 2 + 4 = 2H`.
+  - BatchNorm selalu nyala dan `bias=False`. Aman untuk batch size 1, karena ukuran terkecil di decoder 2×2 (masih ada 4 nilai per channel).
+  - Urutan: ConvTranspose → BatchNorm → (Dropout 0.5) → ReLU, sesuai paper.
+  - `forward(x, skip)` melakukan concat **di dalam blok** (`torch.cat([x, skip], dim=1)`), supaya cuma ada satu tempat yang melakukan concat.
+
+- **Verifikasi mandiri (dijalankan di PC):**
+  ```
+  out1 (u1: bottleneck + e7) -> torch.Size([2, 1024, 2, 2])
+  out2 (u2: out1 + e6)       -> torch.Size([2, 1024, 4, 4])
+  mode train, input sama dipanggil 2x -> torch.equal = False
+  mode eval,  input sama dipanggil 2x -> torch.equal = True
+  ```
+
+- **Analisis Kelompok:** Shape-nya cocok dengan perhitungan di Tahap 2: output tiap blok decoder selalu 2× channel karena ditempel skip, makanya input u2 = 1024. Tes train/eval membuktikan dropout bekerja sebagai sumber keacakan pengganti noise `z`: di mode train input yang sama menghasilkan output berbeda, sedangkan di mode eval output-nya selalu sama. Ini jadi catatan untuk nanti saat menyimpan sampel gambar di `train.py`, harus diputuskan pakai `G.eval()` atau `G.train()`, dan pilihannya ditulis di laporan.
+
 ---
 
-**Commit terkait:** `feat(model): tambah DownBlock encoder U-Net` (branch `feat/model`)
+**Commit terkait:**
+- `feat(model): tambah DownBlock encoder U-Net` (branch `feat/model`)
+- `feat(model): tambah UpBlock decoder U-Net` (branch `feat/model`)
