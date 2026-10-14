@@ -54,6 +54,12 @@
   | `lambda_l1` / `lambda_adv` | 100 / 1 | Sesuai paper |
 - PyTorch di PC adalah build **nightly** (`2.12.0.dev...`). Versinya harus dicatat di `requirements.txt` dan tidak di-update di tengah eksperimen tuning, supaya hasil bisa direproduksi.
 - `torch.cuda.is_available() = True` belum cukup; perlu tes `x @ x` di GPU untuk memastikan kernel `sm_120` (RTX seri 50) benar-benar jalan.
+- **Hasil tes GPU di PC:**
+  ```
+  PS> py -c "import torch; x=torch.randn(1000,1000,device='cuda'); print((x@x).sum().item(), torch.cuda.get_device_name(0))"
+  -45886.4140625 NVIDIA GeForce RTX 5060 Ti
+  ```
+  Perkalian matriks di GPU jalan tanpa error `no kernel image is available`, jadi build PyTorch `cu128` sudah mendukung arsitektur `sm_120`. PC siap dipakai training.
 - Di PC perintahnya `py -m src.train`, bukan `python -m src.train`.
 
 ---
