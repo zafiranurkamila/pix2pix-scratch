@@ -65,11 +65,17 @@ def denorm(x: torch.Tensor) -> torch.Tensor:
 
 def save_sample_grid(inp: torch.Tensor, fake: torch.Tensor, target: torch.Tensor,
                      path: Path) -> None:
-    """Simpan grid: tiap baris = [label map | hasil G | foto asli]."""
+    """Simpan grid: tiap baris = [label map | hasil G | foto asli].
+
+    Ketiga tensor dipindah ke CPU dulu SEBELUM digabung, karena bisa datang
+    dari device berbeda (misal fake di GPU, target di CPU). torch.stack
+    menolak menggabungkan tensor dari device yang berbeda.
+    """
+    inp, fake, target = inp.cpu(), fake.cpu(), target.cpu()
     rows = []
     for i in range(inp.size(0)):
         rows.extend([inp[i], fake[i], target[i]])
-    grid = denorm(torch.stack(rows).cpu())
+    grid = denorm(torch.stack(rows))
     path.parent.mkdir(parents=True, exist_ok=True)
     save_image(grid, path, nrow=3, padding=2)
 
@@ -89,10 +95,18 @@ def save_checkpoint(state: dict, path: Path) -> None:
     os.replace(tmp, path)
 
 
-def load_checkpoint(path: Path, device: torch.device) -> dict:
-    # weights_only=False karena checkpoint berisi RNG state & dict config,
-    # bukan cuma tensor. Aman karena file ini kita buat sendiri.
-    return torch.load(path, map_location=device, weights_only=False)
+def load_checkpoint(path: Path) -> dict:
+    """Muat checkpoint ke CPU.
+
+    Sengaja selalu ke CPU, bukan langsung ke GPU:
+    - RNG state dan state generator shuffle WAJIB tensor CPU; kalau ikut
+      dipindah ke GPU, torch.set_rng_state / Generator.set_state akan error.
+    - Bobot model dan state optimizer tetap aman: load_state_dict() menyalin
+      nilainya ke device tempat model/optimizer berada (GPU).
+    weights_only=False karena checkpoint berisi RNG state & dict config,
+    bukan cuma tensor. Aman karena file ini kita buat sendiri.
+    """
+    return torch.load(path, map_location="cpu", weights_only=False)
 
 
 # ---------------------------------------------------------------------------

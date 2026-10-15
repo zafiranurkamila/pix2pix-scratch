@@ -188,7 +188,7 @@ def main() -> None:
     best_val = float("inf")
     last_path = ckpt_dir / "last.pt"
     if last_path.exists():
-        ckpt = load_checkpoint(last_path, device)
+        ckpt = load_checkpoint(last_path)
         G.load_state_dict(ckpt["G"])
         D.load_state_dict(ckpt["D"])
         opt_G.load_state_dict(ckpt["opt_G"])
