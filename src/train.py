@@ -135,6 +135,8 @@ def save_samples(G, fixed_batch: dict, path: Path, device) -> None:
     G.eval()
     real_A = fixed_batch["input"].to(device)
     fake_B = G(real_A)
+    # fixed_batch dibuat langsung dari dataset (CPU); G di GPU.
+    # save_sample_grid yang menyamakan device-nya.
     save_sample_grid(real_A, fake_B, fixed_batch["target"], path)
     G.train()
 
@@ -244,12 +246,19 @@ def main() -> None:
             "best_val_L1": min(best_val, val_l1),
             "config": cfg.to_dict(),
         }
+        # Versi ringan: bobot G & D saja, tanpa state optimizer/scheduler/RNG.
+        # best.pt dan epoch_XXX.pt hanya untuk evaluasi, bukan resume
+        # (resume selalu dari last.pt), jadi state Adam tidak perlu ikut.
+        # Ukurannya sekitar 1/3 dari last.pt, karena Adam menyimpan 2 tensor
+        # tambahan untuk setiap parameter.
+        weights_only = {k: state[k] for k in ("epoch", "G", "D", "config")}
+        weights_only["val_L1"] = val_l1
         if val_l1 < best_val:
             best_val = val_l1
-            save_checkpoint(state, ckpt_dir / "best.pt")
+            save_checkpoint(weights_only, ckpt_dir / "best.pt")
         if epoch % cfg.save_every == 0:
-            save_checkpoint(state, ckpt_dir / f"epoch_{epoch:03d}.pt")
-        save_checkpoint(state, last_path)     # selalu terakhir, paling penting
+            save_checkpoint(weights_only, ckpt_dir / f"epoch_{epoch:03d}.pt")
+        save_checkpoint(state, last_path)     # lengkap, selalu terakhir, paling penting
         plot_losses(log_dir / "losses.csv", log_dir / "loss_curve.png")
 
         print(f"[epoch {epoch:3d}/{cfg.epochs}] "

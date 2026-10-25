@@ -47,7 +47,7 @@ class TrainConfig:
     lambda_l1: float = 100.0
 
     # ---- Penyimpanan ----
-    save_every: int = 10          # checkpoint bernomor tiap N epoch (last.pt tetap tiap epoch)
+    save_every: int = 50          # checkpoint bernomor tiap N epoch (last.pt tetap tiap epoch)
     sample_every: int = 1         # simpan grid sampel tiap N epoch
     num_samples: int = 4          # jumlah gambar val di grid sampel
 
