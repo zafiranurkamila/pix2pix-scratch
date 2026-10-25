@@ -50,7 +50,7 @@ Pemilik file adalah orang yang paling paham isinya dan yang mereview perubahan d
 - **Format mentah:** setiap file adalah satu gambar yang berisi **dua gambar berdampingan** (kiri | kanan): satu label map warna-warni, satu foto asli.
 - ⚠️ **Wajib dicek manual:** buka beberapa gambar dan pastikan sisi mana yang label map dan mana yang foto. **Jangan berasumsi.** Hasil pengecekan ditulis di bagian ini:
 
-  > Sisi kiri = ____________ , Sisi kanan = ____________ (diisi Fira)
+  > Sisi kiri = foto asli , Sisi kanan = label map (dicek Fira, 24/10/2026, LABEL_ON_LEFT = False)
 
 - `Dataset` harus mengembalikan:
   - `"input"` → **label map** (kondisi)
