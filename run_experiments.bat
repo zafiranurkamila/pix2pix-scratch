@@ -16,6 +16,10 @@ rem ===========================================================================
 setlocal
 cd /d "%~dp0"
 
+rem Tanpa ini Python menahan output print saat dialihkan ke file,
+rem sehingga log di outputs\_batch_logs\ kosong sampai run selesai.
+set PYTHONUNBUFFERED=1
+
 rem Ganti kalau perlu, misal: set PY=.venv\Scripts\python.exe
 set PY=py
 if exist ".venv\Scripts\activate.bat" call ".venv\Scripts\activate.bat"
