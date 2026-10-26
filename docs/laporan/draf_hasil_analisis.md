@@ -68,7 +68,16 @@ Dengan menilai per patch, D fokus pada tekstur dan detail lokal (tepi jendela, p
 
 ![Grafik loss baseline](../hasil/loss_curve_baseline.png)
 
-[BAHAN: Zafira, sampel `outputs/baseline/samples/epoch_001.png`, `epoch_010.png`, `epoch_050.png`, `epoch_200.png` untuk menunjukkan perkembangan hasil]
+**Perkembangan hasil selama training** (run `bs4`, 4 gambar val yang sama di setiap epoch; tiap baris: label map | hasil G | foto asli):
+
+| Epoch 1 | Epoch 10 | Epoch 50 | Epoch 200 |
+|---|---|---|---|
+| ![](../hasil/sampel_bs4/epoch_001.png) | ![](../hasil/sampel_bs4/epoch_010.png) | ![](../hasil/sampel_bs4/epoch_050.png) | ![](../hasil/sampel_bs4/epoch_200.png) |
+
+- **Epoch 1:** hasil masih berupa bayangan abu-abu buram. Posisi lantai dan jendela baru terlihat samar.
+- **Epoch 10:** struktur bangunan sudah jelas (baris jendela, garis lantai), tapi warnanya gelap dan masih banyak bercak.
+- **Epoch 50:** tekstur mulai muncul (kusen, bata, ornamen), tapi masih kasar dan ada noise kehijauan.
+- **Epoch 200:** hasil paling bersih, warna dinding lebih masuk akal, dan detail jendela lebih rapi. Penurunan learning rate di epoch 101–200 membantu menghaluskan hasil.
 
 Pengamatan:
 
