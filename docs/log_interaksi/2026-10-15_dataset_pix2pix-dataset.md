@@ -3,7 +3,7 @@
 - **Tanggal Sesi:** 15/10/2026 – 24/10/2026
 - **Anggota / Peran:** Fira — Data Pipeline & Preprocessing
 - **Target Modul:** `src/dataset.py` — class `Pix2PixDataset` (CMP Facades)
-- **Tautan Sesi Chat:** [tempel share link chat di sini]
+- **Tautan Sesi Chat:** https://claude.ai/share/9edb4980-7a34-4e2c-af0d-2d1962118bae
 
 ---
 
