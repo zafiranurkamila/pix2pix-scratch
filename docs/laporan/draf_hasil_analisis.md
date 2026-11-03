@@ -138,7 +138,13 @@ Pengamatan:
 - **Warna hasil berbeda dari foto asli.** Ini bukan kesalahan model: label map tidak berisi informasi warna, sehingga satu label map bisa cocok dengan banyak foto yang sama-sama masuk akal (gedung krem, abu, atau putih). Hal ini juga menjelaskan kenapa PSNR rendah (sekitar 12–13 dB): L1 dan PSNR menghukum warna yang masuk akal tapi berbeda dari foto asli.
 - **Kegagalan yang sering muncul:** bercak putih/abu di area langit bagian atas gambar (baseline, lr1e-4), artefak warna-warni (lambda10, contoh test #52 dan #79), dan garis vertikal (bs4, test #79). Area langit dan tepi gambar paling sering gagal karena di label map area tersebut hanya berupa latar belakang tanpa struktur.
 
-[BAHAN: Zafira, contoh hasil terbaik dan terburuk dari `outputs/bs4/eval/test_last_eval/per_image.csv` (urutkan kolom L1)]
+**Contoh hasil terbaik dan terburuk** (run `bs4`, diurutkan dari L1 per gambar):
+
+![Contoh terbaik dan terburuk](../hasil/contoh_terbaik_terburuk.png)
+
+- **Terbaik (L1 0,219–0,230):** fasad dengan pola jendela teratur dan warna netral, serta foto dengan area latar abu-abu/putih yang luas (test #13, #88). Latar seperti ini mudah ditiru, jadi sebagian skor baiknya berasal dari latar, bukan fasadnya.
+- **Terburuk (L1 0,511–0,540):** bangunan yang tidak mirip fasad gedung biasa (test #99, stasiun kecil berdinding kayu), warna asli yang jauh dari warna umum dataset (test #18, gedung merah-kuning; strukturnya sebenarnya sudah benar), dan foto dengan objek di depan bangunan yang tidak ada di label map (test #7: halte, pohon, kabel).
+- Test #18 menunjukkan L1 lebih banyak menilai kecocokan warna daripada ketepatan struktur.
 
 ---
 
