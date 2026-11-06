@@ -1,4 +1,4 @@
-# LOG INTERAKSI LLM: KELOMPOK [ISI nama kelompok]
+# LOG INTERAKSI LLM: KELOMPOK 9
 
 - **Anggota:** Ce, Lead Documentarian & Error Handler
 - **Tanggal Sesi:** 13/10/2026 – 04/11/2026 (satu percakapan yang berlanjut beberapa hari)
