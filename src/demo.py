@@ -79,20 +79,27 @@ def run(args) -> None:
         matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
+    t0 = time.time()
     G = UNetGenerator(3, 3, 64)
     if args.weights.lower() != "none":   # "none" = bobot acak, hanya untuk tes program
+        print(f"[1/3] Memuat Generator dari {args.weights} (bisa beberapa detik)...", flush=True)
         state = torch.load(args.weights, map_location="cpu", weights_only=False)
         G.load_state_dict(state["G"] if "G" in state else state)
+        if isinstance(state, dict) and "epoch" in state:
+            print(f"      bobot epoch {state['epoch']}", flush=True)
     G.eval()
+    print(f"      model siap ({time.time() - t0:.1f} detik)", flush=True)
 
     files = collect(args.images, args.n, args.seed)
+    print(f"[2/3] Memproses {len(files)} gambar...", flush=True)
     rows = []
-    for f in files:
+    for k, f in enumerate(files, start=1):
         label, photo = load_pair(f)
-        t0 = time.time()
+        t1 = time.time()
         fake = G(label.unsqueeze(0))[0]
-        print(f"[demo] {f.name}: {time.time() - t0:.2f} detik")
+        print(f"      ({k}/{len(files)}) {f.name}: {time.time() - t1:.2f} detik", flush=True)
         rows.append((f.name, label, fake, photo))
+    print("[3/3] Menyusun gambar hasil...", flush=True)
 
     to_img = lambda t: ((t.clamp(-1, 1) + 1) / 2).permute(1, 2, 0).numpy()
     has_photo = any(r[3] is not None for r in rows)
@@ -114,8 +121,9 @@ def run(args) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     out = out_dir / f"demo_{time.strftime('%H%M%S')}.png"
     fig.savefig(out, dpi=120, facecolor="white")
-    print(f"[demo] disimpan ke {out}")
+    print(f"      disimpan ke {out}", flush=True)
     if not args.no_show:
+        print("Selesai. Jendela hasil terbuka; tutup jendelanya untuk kembali ke terminal.", flush=True)
         plt.show()
 
 
