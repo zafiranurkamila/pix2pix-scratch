@@ -8,6 +8,9 @@ Langkah 2 (di laptop presentasi, cukup CPU):
     py -m src.demo run --weights outputs/demo/G_bs4.pt --images data/facades/test --n 4
     py -m src.demo run --weights outputs/demo/G_bs4.pt --images data/facades/test/5.jpg
 
+Bandingkan beberapa model berdampingan (misalnya tanpa vs dengan Discriminator):
+    py -m src.demo run --weights outputs/l1_only/checkpoints/last.pt outputs/bs4/checkpoints/last.pt --images data/facades/test --n 3
+
 --images menerima folder atau file. File boleh berupa gambar gabungan dataset
 (foto | label map, seperti di data/facades) atau label map saja.
 Hasil ditampilkan di jendela dan disimpan ke outputs/demo/.
@@ -72,6 +75,14 @@ def collect(images: str, n: int, seed: int) -> list[Path]:
     return files[:n]
 
 
+def run_label(weights: str) -> str:
+    """Nama run untuk judul kolom: outputs/bs4/checkpoints/last.pt -> bs4, G_bs4.pt -> G_bs4."""
+    p = Path(weights)
+    if p.parent.name == "checkpoints":
+        return p.parent.parent.name
+    return p.stem
+
+
 @torch.no_grad()
 def run(args) -> None:
     import matplotlib
@@ -79,16 +90,19 @@ def run(args) -> None:
         matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    t0 = time.time()
-    G = UNetGenerator(3, 3, 64)
-    if args.weights.lower() != "none":   # "none" = bobot acak, hanya untuk tes program
-        print(f"[1/3] Memuat Generator dari {args.weights} (bisa beberapa detik)...", flush=True)
-        state = torch.load(args.weights, map_location="cpu", weights_only=False)
-        G.load_state_dict(state["G"] if "G" in state else state)
-        if isinstance(state, dict) and "epoch" in state:
-            print(f"      bobot epoch {state['epoch']}", flush=True)
-    G.eval()
-    print(f"      model siap ({time.time() - t0:.1f} detik)", flush=True)
+    models = []  # (nama, G)
+    for k, w in enumerate(args.weights, start=1):
+        t0 = time.time()
+        G = UNetGenerator(3, 3, 64)
+        if w.lower() != "none":   # "none" = bobot acak, hanya untuk tes program
+            print(f"[1/3] Memuat Generator {k}/{len(args.weights)} dari {w} (bisa beberapa detik)...", flush=True)
+            state = torch.load(w, map_location="cpu", weights_only=False)
+            G.load_state_dict(state["G"] if "G" in state else state)
+            if isinstance(state, dict) and "epoch" in state:
+                print(f"      bobot epoch {state['epoch']}", flush=True)
+        G.eval()
+        models.append((run_label(w), G))
+        print(f"      model siap ({time.time() - t0:.1f} detik)", flush=True)
 
     files = collect(args.images, args.n, args.seed)
     print(f"[2/3] Memproses {len(files)} gambar...", flush=True)
@@ -96,18 +110,20 @@ def run(args) -> None:
     for k, f in enumerate(files, start=1):
         label, photo = load_pair(f)
         t1 = time.time()
-        fake = G(label.unsqueeze(0))[0]
+        fakes = [G(label.unsqueeze(0))[0] for _, G in models]
         print(f"      ({k}/{len(files)}) {f.name}: {time.time() - t1:.2f} detik", flush=True)
-        rows.append((f.name, label, fake, photo))
+        rows.append((f.name, label, fakes, photo))
     print("[3/3] Menyusun gambar hasil...", flush=True)
 
     to_img = lambda t: ((t.clamp(-1, 1) + 1) / 2).permute(1, 2, 0).numpy()
     has_photo = any(r[3] is not None for r in rows)
-    cols = 3 if has_photo else 2
+    titles = (["Label map (input)"]
+              + [f"Hasil {name}" if len(models) > 1 else "Hasil Generator" for name, _ in models]
+              + (["Foto asli"] if has_photo else []))
+    cols = len(titles)
     fig, axes = plt.subplots(len(rows), cols, figsize=(3.2 * cols, 3.2 * len(rows) + 0.4), squeeze=False)
-    titles = ["Label map (input)", "Hasil Generator", "Foto asli"]
-    for i, (name, label, fake, photo) in enumerate(rows):
-        for j, t in enumerate([label, fake, photo][:cols]):
+    for i, (name, label, fakes, photo) in enumerate(rows):
+        for j, t in enumerate(([label] + fakes + [photo])[:cols]):
             ax = axes[i][j]
             ax.axis("off")
             if t is not None:
@@ -138,7 +154,9 @@ def main() -> None:
     e.add_argument("--out", default=None)
 
     r = sub.add_parser("run", help="jalankan Generator pada gambar")
-    r.add_argument("--weights", required=True, help="file hasil export, atau 'none' untuk tes")
+    r.add_argument("--weights", required=True, nargs="+",
+                   help="satu atau lebih checkpoint/file export (dibandingkan berdampingan), "
+                        "atau 'none' untuk tes")
     r.add_argument("--images", required=True, help="folder atau file gambar")
     r.add_argument("--n", type=int, default=4, help="jumlah gambar acak jika --images folder")
     r.add_argument("--seed", type=int, default=None, help="isi angka agar pilihan gambar sama tiap kali")
